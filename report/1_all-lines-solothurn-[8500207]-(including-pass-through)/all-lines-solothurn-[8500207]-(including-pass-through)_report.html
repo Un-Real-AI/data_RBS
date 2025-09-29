@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>All Lines - Solothurn [8500207] (including pass-through) – Report</title>
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+
+  <style>
+  :root{
+    --fg:#1f2937; --muted:#6b7280; --card:#ffffff; --bg:#f8fafc; --accent:#0ea5e9;
+    --space-1:.5rem; --space-2:.8rem; --space-3:1.2rem; --radius:12px;
+  }
+  *{box-sizing:border-box}
+  body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg); color:var(--fg); margin:0; padding:2rem;}
+  .report{max-width:1500px;margin:0 auto;background:var(--card);border-radius:16px;padding:24px;box-shadow:0 10px 30px rgba(0,0,0,.06);}
+  h1{margin:.2rem 0 1rem;font-size:clamp(1.6rem,1.2rem + 1.2vw,2.1rem)}
+  h2{margin:1.6rem 0 .8rem;font-size:clamp(1.1rem,.9rem + .6vw,1.35rem)}
+  h3{margin:1.2rem 0 .6rem;font-size:clamp(1.0rem,.9rem + .3vw,1.1rem)}
+  .meta{color:var(--muted);font-size:.9rem;margin-bottom:1rem;font-variant-numeric:tabular-nums}
+  .small{font-size:.9rem;color:var(--muted);font-variant-numeric:tabular-nums}
+
+  /* Responsive grids */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:.8rem 0 1.2rem}
+  .row{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px; align-items:start}
+  .row-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:14px}
+  .row-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+
+  .card{background:#fff;border:1px solid #eef2f7;border-radius:var(--radius);padding:14px;min-height:100%; overflow:hidden;}
+  .card.allow-overflow{ overflow:visible }
+  .card > h3{margin:.2rem 0 .6rem}
+  .card[data-compact="true"]{padding:10px}
+
+  img{max-width:100%;height:auto;border-radius:8px;border:1px solid #eef2f7}
+
+  /* Tables */
+  .table{width:100%;border-collapse:collapse;font-size:.92rem}
+  .table th,.table td{padding:.5rem .6rem;border-bottom:1px solid #eef2f7;text-align:left}
+  .table th{position:sticky;top:0;background:var(--card);z-index:1}
+  .table td:nth-child(2), .table td:nth-child(3){text-align:right;font-variant-numeric:tabular-nums}
+
+  hr{border:none;border-top:1px solid #eef2f7;margin:1.2rem 0}
+  .link-card{display:flex;justify-content:space-between;align-items:center;padding:12px;border:1px solid #eef2f7;border-radius:10px;background:#fafcff}
+  .link-card a{color:var(--accent);text-decoration:none;font-weight:600}
+  .footer{color:var(--muted);font-size:.8rem;margin-top:1rem}
+  details{border:1px solid #eef2f7;border-radius:12px;background:#fff;margin:12px 0}
+  summary{cursor:pointer;list-style:none;padding:12px 14px;font-weight:600}
+  summary::-webkit-details-marker{display:none}
+  details > .content{padding:14px;border-top:1px solid #eef2f7}
+  .placeholder{user-select:none}
+  .badge{display:inline-block;background:#eef6ff;color:#0b6fb5;border:1px solid #cfe8ff;padding:.2rem .5rem;border-radius:999px;font-size:.8rem}
+
+  /* Key-value grid */
+  .kv{display:grid;grid-template-columns:1fr auto;gap:.25rem .8rem;align-items:baseline;margin:.2rem 0 1rem}
+  .kv .k{color:var(--muted)}
+  .kv .v{font-weight:600}
+
+  /* Plotly responsiveness and sizing helpers */
+  .plotly, .js-plotly-plot{width:100% !important; height:auto}
+  .chart-square{ aspect-ratio:1/1; min-height:420px; width:100% }
+  .chart-43{ aspect-ratio:4/3; min-height:320px; width:100% }
+  .chart-square .js-plotly-plot,
+  .chart-square .plotly,
+  .chart-43 .js-plotly-plot,
+  .chart-43 .plotly{ height:100% !important; width:100% !important; display:block }
+
+  /* Distance charts */
+  .chart-distance-main{ min-height:420px; width:100% }
+  .chart-distance-compact{ min-height:300px; width:100% }
+
+  /* Filter bar */
+  .filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;align-items:end;margin:.6rem 0 1rem}
+  .filters label{font-size:.85rem;color:var(--muted);display:block;margin-bottom:.25rem}
+  .filters input[type="checkbox"]{transform:translateY(1px)}
+  .filters .inline{display:flex;align-items:center;gap:.5rem}
+  .filters select,.filters button{width:100%;padding:.55rem .6rem;border:1px solid #e5e7eb;border-radius:10px;background:#fff;font-weight:600}
+  .filters button{background:var(--accent);color:#fff;cursor:pointer}
+  .filters .hint{font-size:.8rem;color:var(--muted)}
+
+  /* Dark mode */
+  @media (prefers-color-scheme: dark){
+    :root{ --fg:#e5e7eb; --muted:#94a3b8; --card:#0b1220; --bg:#0a0f1a; --accent:#38bdf8 }
+    body{background:var(--bg); color:var(--fg)}
+    .card, details{background:var(--card); border-color:#1f2937}
+    .table th,.table td{border-bottom:1px solid #1f2937}
+    img{border-color:#1f2937}
+    .link-card{background:#0f172a; border-color:#1f2937}
+  }
+
+  @media (prefers-reduced-motion: reduce){ *{scroll-behavior:auto} }
+
+  @media print{
+    body{background:#fff; padding:0; color:#000}
+    .report{box-shadow:none; border-radius:0; max-width:none; padding:0}
+    .filters{display:none}
+    details{border:none}
+    details[open] > .content{padding:0}
+    .card{break-inside:avoid}
+    a[href^="http"]:after{content:" (" attr(href) ")"; font-size:.85em}
+  }
+  /* ——— Nicer filter UI ——— */
+/* Filter card layout */
+.filter-card{
+  margin:0 0 12px;
+  background:var(--card);
+  border:1px solid #eef2f7;
+  border-radius:var(--radius);
+  padding:16px;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+.filter-card h3{margin:0 0 4px}
+
+/* Row containers */
+.filter-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.filter-row.middle{flex-wrap:wrap}
+.filter-row.middle .fctl{flex:1 1 220px}
+.filter-row.bottom{flex-direction:column;align-items:flex-start;gap:.35rem}
+
+/* Inputs */
+.fctl label{display:block;margin:0 0 .35rem;font-size:.9rem;color:var(--fg)}
+.fctl .muted{color:var(--muted);font-weight:400}
+.fctl .req{color:var(--accent);font-weight:600}
+.fctl select{width:100%;padding:.6rem .7rem;border:1px solid #e5e7eb;border-radius:10px;background:#fff;font-weight:600}
+.filter-row.bottom button{
+  width:100%;padding:.8rem 1rem;
+  border:none;border-radius:12px;
+  background:var(--accent);color:#fff;
+  font-weight:700;cursor:pointer;
+}
+.filter-row.bottom button[disabled]{opacity:.6;cursor:not-allowed}
+.small.error{color:#b91c1c}
+
+/* Segmented toggle */
+.seg-toggle{display:inline-grid;grid-auto-flow:column;border:1px solid #e5e7eb;border-radius:999px;overflow:hidden}
+.seg-toggle input{position:absolute;opacity:0;pointer-events:none}
+.seg-toggle label{padding:.45rem .9rem;font-weight:700;cursor:pointer;background:#f9fafb}
+.seg-toggle input:checked + label{background:var(--accent);color:#fff}
+
+/* Pass-through switch */
+.switch{display:inline-flex;align-items:center;gap:.6rem;cursor:pointer;user-select:none}
+.switch input{position:absolute;opacity:0;width:0;height:0}
+.switch .slider{position:relative;width:46px;height:28px;border-radius:999px;background:#e5e7eb;transition:.2s;display:inline-block}
+.switch .slider::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.15);transition:.2s}
+.switch input:checked + .slider{background:var(--accent)}
+.switch input:checked + .slider::after{transform:translateX(18px)}
+.switch .switch-label{font-weight:600;color:var(--fg);font-size:.9rem}
+
+/* Dark mode tweaks */
+@media (prefers-color-scheme: dark){
+  .filter-card{border-color:#1f2937}
+  .fctl select{background:var(--card);border-color:#1f2937;color:var(--fg)}
+  .seg-toggle{border-color:#1f2937}
+  .seg-toggle label{background:#0f172a}
+  .switch .slider{background:#334155}
+}
+
+
+
+  </style>
+</head>
+
+<body>
+<div class="report">
+
+  <div class="meta">Erstellt am 2025-09-25 16:44</div>
+  <h1>All Lines - Solothurn [8500207] (including pass-through) – Report</h1>
+
+  
+  
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+      
+  <h2>Übersicht</h2>
+    <div class="row">
+    
+      <div class="card" >
+      <h3>Lage</h3>
+      
+      <iframe data-src="../1_all-lines-solothurn-[8500207]-(including-pass-through)/all-lines-solothurn-[8500207]-(including-pass-through)_location.html" src="about:blank" width="100%" height="400"
+              loading="lazy" referrerpolicy="no-referrer"
+              style="border:1px solid #eef2f7;border-radius:8px"></iframe>
+      <div class="small" style="margin-top:.4rem">
+        Falls der Iframe blockiert wird:
+        <a href="../1_all-lines-solothurn-[8500207]-(including-pass-through)/all-lines-solothurn-[8500207]-(including-pass-through)_location.html">im neuen Tab öffnen</a>.
+      </div>
+    
+    </div>
+
+    <div class="card" >
+      <h3>Schlüsseldaten</h3>
+      
+      <div>                            <div id="fb13c144-1f60-4db6-8afa-528f3cdfc0f2" class="plotly-graph-div" style="height:380px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("fb13c144-1f60-4db6-8afa-528f3cdfc0f2")) {                    Plotly.newPlot(                        "fb13c144-1f60-4db6-8afa-528f3cdfc0f2",                        [{"arrangement":"snap","link":{"hovertemplate":"%{value:,} trips\u003cextra\u003e\u003c\u002fextra\u003e","source":[0,0,1,1,2,2],"target":[3,4,3,4,3,4],"value":[2554,4114,4936,13503,5682,33332]},"node":{"label":["Green","Yellow","Red","OV","MIV"],"pad":10,"thickness":12},"type":"sankey"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"margin":{"l":10,"r":10,"t":60,"b":10},"title":{"text":"Flows: All \u2192 Quality \u2192 Mode"},"height":380},                        {"responsive": true}                    )                };            </script>        </div>
+    
+    </div>
+    </div>
+    <div class="row">
+    
+    <div class="card" >
+      <h3>Schlüsseldaten</h3>
+      
+      <div>                            <div id="8bbff3e6-a3aa-407b-a43d-6256fd4896a0" class="plotly-graph-div" style="height:360px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("8bbff3e6-a3aa-407b-a43d-6256fd4896a0")) {                    Plotly.newPlot(                        "8bbff3e6-a3aa-407b-a43d-6256fd4896a0",                        [{"hovertemplate":"%{y:,} OV trips\u003cextra\u003e\u003c\u002fextra\u003e","name":"OV","text":["38%","27%","13%"],"textposition":"inside","x":["Green","Yellow","Red"],"y":[2554,4936,5682],"type":"bar"},{"hovertemplate":"%{y:,} MIV trips\u003cextra\u003e\u003c\u002fextra\u003e","name":"MIV","text":["62%","73%","79%"],"textposition":"inside","x":["Green","Yellow","Red"],"y":[4114,13503,33332],"type":"bar"},{"hovertemplate":"%{y:,} LV trips\u003cextra\u003e\u003c\u002fextra\u003e","name":"LV","text":["0%","0%","8%"],"textposition":"inside","x":["Green","Yellow","Red"],"y":[5,83,3171],"type":"bar"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"margin":{"l":40,"r":20,"t":60,"b":40},"title":{"text":"OV vs MIV vs LV by OV Quality (share)"},"barmode":"stack","barnorm":"percent","yaxis":{"title":{"text":"Share (%)"}},"height":360},                        {"responsive": true}                    )                };            </script>        </div>
+    
+    </div>
+    <div class="card" >
+      <h3>Schlüsseldaten</h3>
+      
+      <div>                            <div id="c2ae30b4-0d9d-4d13-8a0b-7a48ab991986" class="plotly-graph-div" style="height:360px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("c2ae30b4-0d9d-4d13-8a0b-7a48ab991986")) {                    Plotly.newPlot(                        "c2ae30b4-0d9d-4d13-8a0b-7a48ab991986",                        [{"hole":0.55,"hovertemplate":"%{label}: %{value:,} trips\u003cextra\u003e\u003c\u002fextra\u003e","labels":["OV","MIV","LV"],"textinfo":"label+percent","values":[13253,51357,3259],"type":"pie"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"margin":{"l":20,"r":20,"t":60,"b":20},"title":{"text":"Overall Modal Split"},"height":360,"showlegend":false},                        {"responsive": true}                    )                };            </script>        </div>
+    
+    </div>
+
+    </div>
+  <h2>Jetzige Nutzung</h2>
+  <div class="row">
+      <div class="card" >
+      <h3>ÖV Nachfrage</h3>
+      
+      <iframe data-src="../1_all-lines-solothurn-[8500207]-(including-pass-through)/all-lines-solothurn-[8500207]-(including-pass-through)_total_demand.html" src="about:blank" width="100%" height="560"
+              loading="lazy" referrerpolicy="no-referrer"
+              style="border:1px solid #eef2f7;border-radius:8px"></iframe>
+      <div class="small" style="margin-top:.4rem">
+        Falls der Iframe blockiert wird:
+        <a href="../1_all-lines-solothurn-[8500207]-(including-pass-through)/all-lines-solothurn-[8500207]-(including-pass-through)_total_demand.html">im neuen Tab öffnen</a>.
+      </div>
+    
+    </div>
+    </div>
+<div class="row">
+  <div class="card" >
+      <h3>Top ÖV-Verkehr Gemeinde Paare</h3>
+      
+      <div>                            <div id="f50a69b4-11d3-4efb-8e3e-22ee7744f110" class="plotly-graph-div" style="height:180px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("f50a69b4-11d3-4efb-8e3e-22ee7744f110")) {                    Plotly.newPlot(                        "f50a69b4-11d3-4efb-8e3e-22ee7744f110",                        [{"branchvalues":"total","customdata":{"dtype":"f8","bdata":"P5sq1f3Hj0CJCATamGh\u002fQClwr9YQeHZA9PVjxrvedUCFE7c+\u002f190QMWdXgB8Q2xASVRiLt94aUCvpqkRplZmQArckL6dGWZAq3pvI0VgYUDUy6lcrB5hQCPBYzrinGBAK4JRGIfEX0AL6WQDEPJeQKxEbl6v8VxA98UDTp3rWkDSBVPUSXFZQK+UzR5f91hAFixiobEtWEB+p1wwFc5XQA==","shape":"20, 1"},"domain":{"x":[0.0,1.0],"y":[0.0,1.0]},"hovertemplate":"\u003cb\u003e%{label}\u003c\u002fb\u003e\u003cbr\u003eFahrten: %{value:,.0f}\u003cextra\u003e\u003c\u002fextra\u003e","ids":["Bern \u2013 Solothurn","Olten \u2013 Solothurn","Biel\u002fBienne \u2013 Solothurn","Bern \u2013 Zuchwil","Basel \u2013 Biel\u002fBienne","Biel\u002fBienne \u2013 Olten","Biel\u002fBienne \u2013 Z\u00fcrich","Solothurn \u2013 Z\u00fcrich","Olten \u2013 Zuchwil","Bern \u2013 Grenchen","Biel\u002fBienne \u2013 Zuchwil","Basel \u2013 Solothurn","Grenchen \u2013 Zuchwil","Burgdorf \u2013 Solothurn","Luterbach \u2013 Solothurn","Gen\u00e8ve \u2013 Z\u00fcrich","Bern \u2013 Langendorf","Bern \u2013 Derendingen","Solothurn \u2013 Trimbach","Oensingen \u2013 Solothurn"],"labels":["Bern \u2013 Solothurn","Olten \u2013 Solothurn","Biel\u002fBienne \u2013 Solothurn","Bern \u2013 Zuchwil","Basel \u2013 Biel\u002fBienne","Biel\u002fBienne \u2013 Olten","Biel\u002fBienne \u2013 Z\u00fcrich","Solothurn \u2013 Z\u00fcrich","Olten \u2013 Zuchwil","Bern \u2013 Grenchen","Biel\u002fBienne \u2013 Zuchwil","Basel \u2013 Solothurn","Grenchen \u2013 Zuchwil","Burgdorf \u2013 Solothurn","Luterbach \u2013 Solothurn","Gen\u00e8ve \u2013 Z\u00fcrich","Bern \u2013 Langendorf","Bern \u2013 Derendingen","Solothurn \u2013 Trimbach","Oensingen \u2013 Solothurn"],"marker":{"coloraxis":"coloraxis","colors":{"dtype":"f8","bdata":"P5sq1f3Hj0CJCATamGh\u002fQClwr9YQeHZA9PVjxrvedUCFE7c+\u002f190QMWdXgB8Q2xASVRiLt94aUCvpqkRplZmQArckL6dGWZAq3pvI0VgYUDUy6lcrB5hQCPBYzrinGBAK4JRGIfEX0AL6WQDEPJeQKxEbl6v8VxA98UDTp3rWkDSBVPUSXFZQK+UzR5f91hAFixiobEtWEB+p1wwFc5XQA=="}},"name":"","parents":["","","","","","","","","","","","","","","","","","","",""],"values":{"dtype":"f8","bdata":"P5sq1f3Hj0CJCATamGh\u002fQClwr9YQeHZA9PVjxrvedUCFE7c+\u002f190QMWdXgB8Q2xASlRiLt94aUCvpqkRplZmQArckL6dGWZAq3pvI0VgYUDUy6lcrB5hQCPBYzrinGBAK4JRGIfEX0AL6WQDEPJeQKxEbl6v8VxA9sUDTp3rWkDSBVPUSXFZQK+UzR5f91hAFixiobEtWEB+p1wwFc5XQA=="},"type":"treemap","textinfo":"text","texttemplate":"%{label}\u003cbr\u003e%{value:,.0f}"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"coloraxis":{"colorbar":{"title":{"text":"value"},"tickformat":",.0f"},"colorscale":[[0.0,"#440154"],[0.1111111111111111,"#482878"],[0.2222222222222222,"#3e4989"],[0.3333333333333333,"#31688e"],[0.4444444444444444,"#26828e"],[0.5555555555555556,"#1f9e89"],[0.6666666666666666,"#35b779"],[0.7777777777777778,"#6ece58"],[0.8888888888888888,"#b5de2b"],[1.0,"#fde725"]],"cmin":0.0,"cmax":8596.929118068432},"legend":{"tracegroupgap":0},"margin":{"t":6,"l":0,"r":0,"b":0},"separators":",.","height":180,"title":{}},                        {"responsive": true}                    )                };            </script>        </div>
+      <details style="margin-top:10px">
+        <summary>Tabelle anzeigen</summary>
+        <div class="content"><table class="dataframe table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Herkunft</th>
+      <th>Ziel</th>
+      <th>Fahrten</th>
+      <th>Anteil (%)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Bern</td>
+      <td>Solothurn</td>
+      <td>1017</td>
+      <td>7.7</td>
+    </tr>
+    <tr>
+      <td>Olten</td>
+      <td>Solothurn</td>
+      <td>503</td>
+      <td>3.8</td>
+    </tr>
+    <tr>
+      <td>Biel/Bienne</td>
+      <td>Solothurn</td>
+      <td>360</td>
+      <td>2.7</td>
+    </tr>
+    <tr>
+      <td>Bern</td>
+      <td>Zuchwil</td>
+      <td>350</td>
+      <td>2.6</td>
+    </tr>
+    <tr>
+      <td>Basel</td>
+      <td>Biel/Bienne</td>
+      <td>326</td>
+      <td>2.5</td>
+    </tr>
+    <tr>
+      <td>Biel/Bienne</td>
+      <td>Olten</td>
+      <td>226</td>
+      <td>1.7</td>
+    </tr>
+    <tr>
+      <td>Biel/Bienne</td>
+      <td>Zürich</td>
+      <td>204</td>
+      <td>1.5</td>
+    </tr>
+    <tr>
+      <td>Solothurn</td>
+      <td>Zürich</td>
+      <td>179</td>
+      <td>1.3</td>
+    </tr>
+    <tr>
+      <td>Olten</td>
+      <td>Zuchwil</td>
+      <td>177</td>
+      <td>1.3</td>
+    </tr>
+    <tr>
+      <td>Bern</td>
+      <td>Grenchen</td>
+      <td>139</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <td>Biel/Bienne</td>
+      <td>Zuchwil</td>
+      <td>137</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <td>Basel</td>
+      <td>Solothurn</td>
+      <td>133</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <td>Grenchen</td>
+      <td>Zuchwil</td>
+      <td>127</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <td>Burgdorf</td>
+      <td>Solothurn</td>
+      <td>124</td>
+      <td>0.9</td>
+    </tr>
+    <tr>
+      <td>Luterbach</td>
+      <td>Solothurn</td>
+      <td>116</td>
+      <td>0.9</td>
+    </tr>
+    <tr>
+      <td>Genève</td>
+      <td>Zürich</td>
+      <td>108</td>
+      <td>0.8</td>
+    </tr>
+    <tr>
+      <td>Bern</td>
+      <td>Langendorf</td>
+      <td>102</td>
+      <td>0.8</td>
+    </tr>
+    <tr>
+      <td>Bern</td>
+      <td>Derendingen</td>
+      <td>100</td>
+      <td>0.8</td>
+    </tr>
+    <tr>
+      <td>Solothurn</td>
+      <td>Trimbach</td>
+      <td>97</td>
+      <td>0.7</td>
+    </tr>
+    <tr>
+      <td>Oensingen</td>
+      <td>Solothurn</td>
+      <td>95</td>
+      <td>0.7</td>
+    </tr>
+  </tbody>
+</table></div>
+      </details>
+    
+    </div>
+  <div class="card" >
+      <h3>Top ÖV-Verkehr Gemeinden</h3>
+      
+      <div>                            <div id="23119c8c-f5e0-4ab8-bf8b-2cbf71510dd9" class="plotly-graph-div" style="height:180px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("23119c8c-f5e0-4ab8-bf8b-2cbf71510dd9")) {                    Plotly.newPlot(                        "23119c8c-f5e0-4ab8-bf8b-2cbf71510dd9",                        [{"branchvalues":"total","customdata":{"dtype":"f8","bdata":"b9XAjRp3skD\u002fMVTJStWgQG+UuBKlnqBA+j\u002fvcqixnECNGO4H51aVQNZxMH3xWJBAe1zBrTTrhkA2Hr4zrNyDQHOMG8oMroNAmO12o\u002fAugkDSK9HgECJ6QIR6FHG4FnpABD99z0i3eUBE98pipEF5QNQhU40NIXlAJbXjsEp2dkDWtq6Q+OdzQNKPaLNKynJAbbRwbPLRcUAqi3n2tFZwQA==","shape":"20, 1"},"domain":{"x":[0.0,1.0],"y":[0.0,1.0]},"hovertemplate":"\u003cb\u003e%{label}\u003c\u002fb\u003e\u003cbr\u003eFahrten: %{value:,.0f}\u003cextra\u003e\u003c\u002fextra\u003e","ids":["Solothurn","Bern","Zuchwil","Biel\u002fBienne","Olten","Grenchen","Z\u00fcrich","Basel","Derendingen","Luterbach","Langendorf","Oensingen","Biberist","Subingen","Deitingen","Gerlafingen","Lohn-Ammannsegg","Walliswil bei Niederbipp","Burgdorf","Selzach"],"labels":["Solothurn","Bern","Zuchwil","Biel\u002fBienne","Olten","Grenchen","Z\u00fcrich","Basel","Derendingen","Luterbach","Langendorf","Oensingen","Biberist","Subingen","Deitingen","Gerlafingen","Lohn-Ammannsegg","Walliswil bei Niederbipp","Burgdorf","Selzach"],"marker":{"coloraxis":"coloraxis","colors":{"dtype":"f8","bdata":"b9XAjRp3skD\u002fMVTJStWgQG+UuBKlnqBA+j\u002fvcqixnECNGO4H51aVQNZxMH3xWJBAe1zBrTTrhkA2Hr4zrNyDQHOMG8oMroNAmO12o\u002fAugkDSK9HgECJ6QIR6FHG4FnpABD99z0i3eUBE98pipEF5QNQhU40NIXlAJbXjsEp2dkDWtq6Q+OdzQNKPaLNKynJAbbRwbPLRcUAqi3n2tFZwQA=="}},"name":"","parents":["","","","","","","","","","","","","","","","","","","",""],"values":{"dtype":"f8","bdata":"b9XAjRp3skD\u002fMVTJStWgQG+UuBKlnqBA+j\u002fvcqixnECNGO4H51aVQNZxMH3xWJBAe1zBrTTrhkA2Hr4zrNyDQHOMG8oMroNAmO12o\u002fAugkDSK9HgECJ6QIR6FHG4FnpABD99z0i3eUBE98pipEF5QNQhU40NIXlAJbXjsEp2dkDWtq6Q+OdzQNKPaLNKynJAbbRwbPLRcUAqi3n2tFZwQA=="},"type":"treemap","textinfo":"text","texttemplate":"%{label}\u003cbr\u003e%{value:,.0f}"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"coloraxis":{"colorbar":{"title":{"text":"value"},"tickformat":",.0f"},"colorscale":[[0.0,"#440154"],[0.1111111111111111,"#482878"],[0.2222222222222222,"#3e4989"],[0.3333333333333333,"#31688e"],[0.4444444444444444,"#26828e"],[0.5555555555555556,"#1f9e89"],[0.6666666666666666,"#35b779"],[0.7777777777777778,"#6ece58"],[0.8888888888888888,"#b5de2b"],[1.0,"#fde725"]],"cmin":0.0,"cmax":8596.929118068432},"legend":{"tracegroupgap":0},"margin":{"t":6,"l":0,"r":0,"b":0},"separators":",.","height":180,"title":{}},                        {"responsive": true}                    )                };            </script>        </div>
+      <details style="margin-top:10px">
+        <summary>Tabelle anzeigen</summary>
+        <div class="content"><table class="dataframe table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Gemeinde</th>
+      <th>Fahrten</th>
+      <th>Anteil (%)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Solothurn</td>
+      <td>4727</td>
+      <td>17.8</td>
+    </tr>
+    <tr>
+      <td>Bern</td>
+      <td>2155</td>
+      <td>8.1</td>
+    </tr>
+    <tr>
+      <td>Zuchwil</td>
+      <td>2127</td>
+      <td>8.0</td>
+    </tr>
+    <tr>
+      <td>Biel/Bienne</td>
+      <td>1836</td>
+      <td>6.9</td>
+    </tr>
+    <tr>
+      <td>Olten</td>
+      <td>1366</td>
+      <td>5.2</td>
+    </tr>
+    <tr>
+      <td>Grenchen</td>
+      <td>1046</td>
+      <td>3.9</td>
+    </tr>
+    <tr>
+      <td>Zürich</td>
+      <td>733</td>
+      <td>2.8</td>
+    </tr>
+    <tr>
+      <td>Basel</td>
+      <td>636</td>
+      <td>2.4</td>
+    </tr>
+    <tr>
+      <td>Derendingen</td>
+      <td>630</td>
+      <td>2.4</td>
+    </tr>
+    <tr>
+      <td>Luterbach</td>
+      <td>582</td>
+      <td>2.2</td>
+    </tr>
+    <tr>
+      <td>Langendorf</td>
+      <td>418</td>
+      <td>1.6</td>
+    </tr>
+    <tr>
+      <td>Oensingen</td>
+      <td>417</td>
+      <td>1.6</td>
+    </tr>
+    <tr>
+      <td>Biberist</td>
+      <td>411</td>
+      <td>1.6</td>
+    </tr>
+    <tr>
+      <td>Subingen</td>
+      <td>404</td>
+      <td>1.5</td>
+    </tr>
+    <tr>
+      <td>Deitingen</td>
+      <td>402</td>
+      <td>1.5</td>
+    </tr>
+    <tr>
+      <td>Gerlafingen</td>
+      <td>359</td>
+      <td>1.4</td>
+    </tr>
+    <tr>
+      <td>Lohn-Ammannsegg</td>
+      <td>318</td>
+      <td>1.2</td>
+    </tr>
+    <tr>
+      <td>Walliswil bei Niederbipp</td>
+      <td>301</td>
+      <td>1.1</td>
+    </tr>
+    <tr>
+      <td>Burgdorf</td>
+      <td>285</td>
+      <td>1.1</td>
+    </tr>
+    <tr>
+      <td>Selzach</td>
+      <td>261</td>
+      <td>1.0</td>
+    </tr>
+  </tbody>
+</table></div>
+      </details>
+    
+    </div>
+</div>
+
+<div class="row">
+  <div class="card" >
+      <h3>Top Linien</h3>
+      
+      <div>                            <div id="0e0b2951-e3c8-4769-9b47-a1ba3ff44fd3" class="plotly-graph-div" style="height:180px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("0e0b2951-e3c8-4769-9b47-a1ba3ff44fd3")) {                    Plotly.newPlot(                        "0e0b2951-e3c8-4769-9b47-a1ba3ff44fd3",                        [{"branchvalues":"total","customdata":{"dtype":"f8","bdata":"wPz2y\u002fA1s0Bo4dlseaiwQCZKQi47Wq1AirUD7IN2kkCnYK117SaSQG\u002f2nyPTSJBAd1GbiU3Ci0AaGxTlTwSGQAgtfjsW\u002f3xApZTaFk2dd0ChQsMYpIVyQFs6BXLr6m9AV9PnTXPpbkDs9WJl3XpuQGK3kSKEf2xAE+Voz\u002fz6akCCviuCLNNoQMGYMTcwP2dAvbiVkuMzZECz8bDT2oNjQA==","shape":"20, 1"},"domain":{"x":[0.0,1.0],"y":[0.0,1.0]},"hovertemplate":"\u003cb\u003e%{label}\u003c\u002fb\u003e\u003cbr\u003eFahrten: %{value:,.0f}\u003cextra\u003e\u003c\u002fextra\u003e","ids":["IC5 (Schweizerische Bundesbahnen SBB)","S20 (Schweizerische Bundesbahnen SBB)","RE5 (Regionalverkehr Bern-Solothurn)","5 (Busbetrieb Solothurn und Umgebung)","2 (Busbetrieb Solothurn und Umgebung)","1 (Busbetrieb Solothurn und Umgebung)","S11 (Aare Seeland mobil (snb))","S44 (BLS AG (bls))","7 (Busbetrieb Solothurn und Umgebung)","S41 (BLS AG (bls))","IC21 (Schweizerische Bundesbahnen SBB)","S8 (Regionalverkehr Bern-Solothurn)","21 (Busbetrieb Grenchen und Umgebung)","3 (Busbetrieb Solothurn und Umgebung)","2 (Verkehrsbetriebe Biel)","IC61 (Schweizerische Bundesbahnen SBB)","502 (Busbetrieb Olten-G\u00f6sgen-G\u00e4u)","20 (St\u00e4dtische Verkehrsbetriebe Bern)","8 (Autobusbetrieb RBS)","465 (Busland AG)"],"labels":["IC5 (Schweizerische Bundesbahnen SBB)","S20 (Schweizerische Bundesbahnen SBB)","RE5 (Regionalverkehr Bern-Solothurn)","5 (Busbetrieb Solothurn und Umgebung)","2 (Busbetrieb Solothurn und Umgebung)","1 (Busbetrieb Solothurn und Umgebung)","S11 (Aare Seeland mobil (snb))","S44 (BLS AG (bls))","7 (Busbetrieb Solothurn und Umgebung)","S41 (BLS AG (bls))","IC21 (Schweizerische Bundesbahnen SBB)","S8 (Regionalverkehr Bern-Solothurn)","21 (Busbetrieb Grenchen und Umgebung)","3 (Busbetrieb Solothurn und Umgebung)","2 (Verkehrsbetriebe Biel)","IC61 (Schweizerische Bundesbahnen SBB)","502 (Busbetrieb Olten-G\u00f6sgen-G\u00e4u)","20 (St\u00e4dtische Verkehrsbetriebe Bern)","8 (Autobusbetrieb RBS)","465 (Busland AG)"],"marker":{"coloraxis":"coloraxis","colors":{"dtype":"f8","bdata":"wPz2y\u002fA1s0Bo4dlseaiwQCZKQi47Wq1AirUD7IN2kkCnYK117SaSQG\u002f2nyPTSJBAd1GbiU3Ci0AaGxTlTwSGQAgtfjsW\u002f3xApZTaFk2dd0ChQsMYpIVyQFs6BXLr6m9AV9PnTXPpbkDs9WJl3XpuQGK3kSKEf2xAE+Voz\u002fz6akCCviuCLNNoQMGYMTcwP2dAvbiVkuMzZECz8bDT2oNjQA=="}},"name":"","parents":["","","","","","","","","","","","","","","","","","","",""],"values":{"dtype":"f8","bdata":"wPz2y\u002fA1s0Bo4dlseaiwQCZKQi47Wq1AirUD7IN2kkCnYK117SaSQG\u002f2nyPTSJBAd1GbiU3Ci0AaGxTlTwSGQAgtfjsW\u002f3xApZTaFk2dd0ChQsMYpIVyQFs6BXLr6m9AV9PnTXPpbkDs9WJl3XpuQGK3kSKEf2xAE+Voz\u002fz6akCCviuCLNNoQMGYMTcwP2dAvbiVkuMzZECz8bDT2oNjQA=="},"type":"treemap","textinfo":"text","texttemplate":"%{label}\u003cbr\u003e%{value:,.0f}"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"coloraxis":{"colorbar":{"title":{"text":"value"},"tickformat":",.0f"},"colorscale":[[0.0,"#440154"],[0.1111111111111111,"#482878"],[0.2222222222222222,"#3e4989"],[0.3333333333333333,"#31688e"],[0.4444444444444444,"#26828e"],[0.5555555555555556,"#1f9e89"],[0.6666666666666666,"#35b779"],[0.7777777777777778,"#6ece58"],[0.8888888888888888,"#b5de2b"],[1.0,"#fde725"]],"cmin":0.0,"cmax":8596.929118068432},"legend":{"tracegroupgap":0},"margin":{"t":6,"l":0,"r":0,"b":0},"separators":",.","height":180,"title":{}},                        {"responsive": true}                    )                };            </script>        </div>
+      <details style="margin-top:10px">
+        <summary>Tabelle anzeigen</summary>
+        <div class="content"><table class="dataframe table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Namen</th>
+      <th>Fahrten</th>
+      <th>Anteil (%)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>IC5 (Schweizerische Bundesbahnen SBB)</td>
+      <td>4918</td>
+      <td>37.3</td>
+    </tr>
+    <tr>
+      <td>S20 (Schweizerische Bundesbahnen SBB)</td>
+      <td>4264</td>
+      <td>32.3</td>
+    </tr>
+    <tr>
+      <td>RE5 (Regionalverkehr Bern-Solothurn)</td>
+      <td>3757</td>
+      <td>28.5</td>
+    </tr>
+    <tr>
+      <td>5 (Busbetrieb Solothurn und Umgebung)</td>
+      <td>1182</td>
+      <td>9.0</td>
+    </tr>
+    <tr>
+      <td>2 (Busbetrieb Solothurn und Umgebung)</td>
+      <td>1162</td>
+      <td>8.8</td>
+    </tr>
+    <tr>
+      <td>1 (Busbetrieb Solothurn und Umgebung)</td>
+      <td>1042</td>
+      <td>7.9</td>
+    </tr>
+    <tr>
+      <td>S11 (Aare Seeland mobil (snb))</td>
+      <td>888</td>
+      <td>6.7</td>
+    </tr>
+    <tr>
+      <td>S44 (BLS AG (bls))</td>
+      <td>705</td>
+      <td>5.3</td>
+    </tr>
+    <tr>
+      <td>7 (Busbetrieb Solothurn und Umgebung)</td>
+      <td>464</td>
+      <td>3.5</td>
+    </tr>
+    <tr>
+      <td>S41 (BLS AG (bls))</td>
+      <td>378</td>
+      <td>2.9</td>
+    </tr>
+    <tr>
+      <td>IC21 (Schweizerische Bundesbahnen SBB)</td>
+      <td>296</td>
+      <td>2.2</td>
+    </tr>
+    <tr>
+      <td>S8 (Regionalverkehr Bern-Solothurn)</td>
+      <td>255</td>
+      <td>1.9</td>
+    </tr>
+    <tr>
+      <td>21 (Busbetrieb Grenchen und Umgebung)</td>
+      <td>247</td>
+      <td>1.9</td>
+    </tr>
+    <tr>
+      <td>3 (Busbetrieb Solothurn und Umgebung)</td>
+      <td>244</td>
+      <td>1.8</td>
+    </tr>
+    <tr>
+      <td>2 (Verkehrsbetriebe Biel)</td>
+      <td>228</td>
+      <td>1.7</td>
+    </tr>
+    <tr>
+      <td>IC61 (Schweizerische Bundesbahnen SBB)</td>
+      <td>216</td>
+      <td>1.6</td>
+    </tr>
+    <tr>
+      <td>502 (Busbetrieb Olten-Gösgen-Gäu)</td>
+      <td>199</td>
+      <td>1.5</td>
+    </tr>
+    <tr>
+      <td>20 (Städtische Verkehrsbetriebe Bern)</td>
+      <td>186</td>
+      <td>1.4</td>
+    </tr>
+    <tr>
+      <td>8 (Autobusbetrieb RBS)</td>
+      <td>162</td>
+      <td>1.2</td>
+    </tr>
+    <tr>
+      <td>465 (Busland AG)</td>
+      <td>156</td>
+      <td>1.2</td>
+    </tr>
+  </tbody>
+</table></div>
+      </details>
+    
+    </div>
+  <div class="card" >
+      <h3>Top Haltestellen</h3>
+      
+      <div>                            <div id="1e2e0c33-a1af-4706-a1f0-0a4d03a015fc" class="plotly-graph-div" style="height:180px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("1e2e0c33-a1af-4706-a1f0-0a4d03a015fc")) {                    Plotly.newPlot(                        "1e2e0c33-a1af-4706-a1f0-0a4d03a015fc",                        [{"branchvalues":"total","customdata":{"dtype":"f8","bdata":"BUNX7XbKwEBu6YkyUOujQJy0y3A4S59AHNZqYM2vnkBS8CW4IXGXQEZEWguLQolAIHnEL1uBhUB3kqRhRueEQDeztDywh4FAjEH1dleMgEBAxf\u002fPXJF9QCb110NQ0npAlqzClUqweEB2AOJunnJ2QAGhiAh2W3RAUcASmZHlc0Bq\u002fdtic6BzQMUhgxAHM3NAHuacTCf7ckA5bNsgW9lxQA==","shape":"20, 1"},"domain":{"x":[0.0,1.0],"y":[0.0,1.0]},"hovertemplate":"\u003cb\u003e%{label}\u003c\u002fb\u003e\u003cbr\u003eFahrten: %{value:,.0f}\u003cextra\u003e\u003c\u002fextra\u003e","ids":["Solothurn","Olten","Bern","Biel\u002fBienne","Solothurn, Hauptbahnhof","Grenchen S\u00fcd","Z\u00fcrich HB","Solothurn West","Oensingen","Basel SBB","Luterbach-Attisholz","Zuchwil, Kornfeld","Deitingen","Lohn-L\u00fcterkofen","Wangen an der Aare","B\u00e4tterkinden","Grenchen S\u00fcd, Bahnhof","Jegenstorf","Gen\u00e8ve","Burgdorf"],"labels":["Solothurn","Olten","Bern","Biel\u002fBienne","Solothurn, Hauptbahnhof","Grenchen S\u00fcd","Z\u00fcrich HB","Solothurn West","Oensingen","Basel SBB","Luterbach-Attisholz","Zuchwil, Kornfeld","Deitingen","Lohn-L\u00fcterkofen","Wangen an der Aare","B\u00e4tterkinden","Grenchen S\u00fcd, Bahnhof","Jegenstorf","Gen\u00e8ve","Burgdorf"],"marker":{"coloraxis":"coloraxis","colors":{"dtype":"f8","bdata":"BUNX7XbKwEBu6YkyUOujQJy0y3A4S59AHNZqYM2vnkBS8CW4IXGXQEZEWguLQolAIHnEL1uBhUB3kqRhRueEQDeztDywh4FAjEH1dleMgEBAxf\u002fPXJF9QCb110NQ0npAlqzClUqweEB2AOJunnJ2QAGhiAh2W3RAUcASmZHlc0Bq\u002fdtic6BzQMUhgxAHM3NAHuacTCf7ckA5bNsgW9lxQA=="}},"name":"","parents":["","","","","","","","","","","","","","","","","","","",""],"values":{"dtype":"f8","bdata":"BUNX7XbKwEBu6YkyUOujQJy0y3A4S59AHNZqYM2vnkBS8CW4IXGXQEZEWguLQolAIHnEL1uBhUB3kqRhRueEQDeztDywh4FAjEH1dleMgEBAxf\u002fPXJF9QCb110NQ0npAlqzClUqweEB2AOJunnJ2QAGhiAh2W3RAUcASmZHlc0Bq\u002fdtic6BzQMUhgxAHM3NAHuacTCf7ckA5bNsgW9lxQA=="},"type":"treemap","textinfo":"text","texttemplate":"%{label}\u003cbr\u003e%{value:,.0f}"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"coloraxis":{"colorbar":{"title":{"text":"value"},"tickformat":",.0f"},"colorscale":[[0.0,"#440154"],[0.1111111111111111,"#482878"],[0.2222222222222222,"#3e4989"],[0.3333333333333333,"#31688e"],[0.4444444444444444,"#26828e"],[0.5555555555555556,"#1f9e89"],[0.6666666666666666,"#35b779"],[0.7777777777777778,"#6ece58"],[0.8888888888888888,"#b5de2b"],[1.0,"#fde725"]],"cmin":0.0,"cmax":8596.929118068432},"legend":{"tracegroupgap":0},"margin":{"t":6,"l":0,"r":0,"b":0},"separators":",.","height":180,"title":{}},                        {"responsive": true}                    )                };            </script>        </div>
+      <details style="margin-top:10px">
+        <summary>Tabelle anzeigen</summary>
+        <div class="content"><table class="dataframe table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Namen</th>
+      <th>Fahrten</th>
+      <th>Anteil (%)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Solothurn</td>
+      <td>8597</td>
+      <td>64.9</td>
+    </tr>
+    <tr>
+      <td>Olten</td>
+      <td>2550</td>
+      <td>19.2</td>
+    </tr>
+    <tr>
+      <td>Bern</td>
+      <td>2003</td>
+      <td>15.1</td>
+    </tr>
+    <tr>
+      <td>Biel/Bienne</td>
+      <td>1964</td>
+      <td>14.8</td>
+    </tr>
+    <tr>
+      <td>Solothurn, Hauptbahnhof</td>
+      <td>1500</td>
+      <td>11.3</td>
+    </tr>
+    <tr>
+      <td>Grenchen Süd</td>
+      <td>808</td>
+      <td>6.1</td>
+    </tr>
+    <tr>
+      <td>Zürich HB</td>
+      <td>688</td>
+      <td>5.2</td>
+    </tr>
+    <tr>
+      <td>Solothurn West</td>
+      <td>669</td>
+      <td>5.0</td>
+    </tr>
+    <tr>
+      <td>Oensingen</td>
+      <td>561</td>
+      <td>4.2</td>
+    </tr>
+    <tr>
+      <td>Basel SBB</td>
+      <td>530</td>
+      <td>4.0</td>
+    </tr>
+    <tr>
+      <td>Luterbach-Attisholz</td>
+      <td>473</td>
+      <td>3.6</td>
+    </tr>
+    <tr>
+      <td>Zuchwil, Kornfeld</td>
+      <td>429</td>
+      <td>3.2</td>
+    </tr>
+    <tr>
+      <td>Deitingen</td>
+      <td>395</td>
+      <td>3.0</td>
+    </tr>
+    <tr>
+      <td>Lohn-Lüterkofen</td>
+      <td>359</td>
+      <td>2.7</td>
+    </tr>
+    <tr>
+      <td>Wangen an der Aare</td>
+      <td>326</td>
+      <td>2.5</td>
+    </tr>
+    <tr>
+      <td>Bätterkinden</td>
+      <td>318</td>
+      <td>2.4</td>
+    </tr>
+    <tr>
+      <td>Grenchen Süd, Bahnhof</td>
+      <td>314</td>
+      <td>2.4</td>
+    </tr>
+    <tr>
+      <td>Jegenstorf</td>
+      <td>307</td>
+      <td>2.3</td>
+    </tr>
+    <tr>
+      <td>Genève</td>
+      <td>304</td>
+      <td>2.3</td>
+    </tr>
+    <tr>
+      <td>Burgdorf</td>
+      <td>286</td>
+      <td>2.2</td>
+    </tr>
+  </tbody>
+</table></div>
+      </details>
+    
+    </div>
+</div>
+
+  <h2>ÖV Qualität</h2>
+  <div class="row">
+      <div class="card" >
+      <h3>Verhältnis ÖV Fahrzeit vs MIV Fahrzeit</h3>
+      
+      <iframe data-src="../1_all-lines-solothurn-[8500207]-(including-pass-through)/all-lines-solothurn-[8500207]-(including-pass-through)_ratio.html" src="about:blank" width="100%" height="560"
+              loading="lazy" referrerpolicy="no-referrer"
+              style="border:1px solid #eef2f7;border-radius:8px"></iframe>
+      <div class="small" style="margin-top:.4rem">
+        Falls der Iframe blockiert wird:
+        <a href="../1_all-lines-solothurn-[8500207]-(including-pass-through)/all-lines-solothurn-[8500207]-(including-pass-through)_ratio.html">im neuen Tab öffnen</a>.
+      </div>
+    
+    </div>
+    </div>
+  <h2>ÖV Potenzial</h2>
+  <div class="card" >
+      <h3>???</h3>
+      <div class="placeholder" style="height:420px;display:flex;align-items:center;justify-content:center;
+    background:repeating-linear-gradient(45deg,#f3f6fb,#f3f6fb 10px,#eef2f7 10px,#eef2f7 20px);
+    border:1px dashed #cfd8e3;border-radius:12px;font-weight:600;color:#64748b">
+      Inhalt (Placeholder)
+    </div>
+    </div>
+
+    <h2>Daten</h2>
+    <div class="card">
+      <div class="small">
+        <p>Die Analyse beruht auf den folgenden Datensätzen. Soweit nicht anders angegeben, beziehen sich alle Analysen im Dashboard auf die hier pro Datensatz aufgeführten Zeiträume.</p>
+        <p><strong>42hacks Routing Algorithmus</strong> berechnet wahrscheinliche MIV- und ÖV-Reiserouten basierend auf Quell-Ziel-Nachfragematrizen. <strong>Version:</strong> 2025</p>
+        <p><strong>Swisscom Quell-Ziel-Daten</strong> … <strong>Datensatz:</strong> Gemittelter Werktag, 2023</p>
+        <p><strong>Google Environmental Insights Explorer (EIE) – Transport</strong> … <strong>Version:</strong> 2023</p>
+      </div>
+    </div>
+
+    <hr>
+    <div class="footer">
+      <span class="small">Hinweis: Karten sind als separate HTML-Dateien eingebettet.</span>
+    </div>
+  
+
+</div>
+<script>
+(function(){
+  // Lazy-load iframes when visible (works for maps inside subreports too)
+  function loadIframe(iframe){
+    if (!iframe || iframe.__loaded) return;
+    var real = iframe.getAttribute('data-src');
+    if (!real) return;
+    iframe.src = real;
+    iframe.__loaded = true;
+  }
+  var io = 'IntersectionObserver' in window ? new IntersectionObserver(function(entries){
+    entries.forEach(function(e){ if(e.isIntersecting) loadIframe(e.target); });
+  }, {rootMargin: '200px'}) : null;
+
+  function observeIframes(root){
+    var scope = root || document;
+    var iframes = scope.querySelectorAll('iframe[data-src]');
+    iframes.forEach(function(iframe){
+      if (io) io.observe(iframe); else loadIframe(iframe);
+      var details = iframe.closest('details');
+      if (details) {
+        details.addEventListener('toggle', function(){
+          if (details.open) {
+            loadIframe(iframe);
+            try {
+              iframe.contentWindow && iframe.contentWindow.dispatchEvent(new Event('resize'));
+              setTimeout(function(){ iframe.contentWindow && iframe.contentWindow.dispatchEvent(new Event('resize')); }, 150);
+            } catch(e) {}
+          }
+        });
+      }
+    });
+  }
+
+  // Plotly helpers
+  function markPlotlyCards(root){
+    var scope = root || document;
+    var charts = scope.querySelectorAll('.js-plotly-plot');
+    charts.forEach(function(el){
+      var card = el.closest('.card');
+      if (card) card.classList.add('allow-overflow');
+    });
+  }
+  function resizePlotlyCharts(root){
+    var scope = root || document;
+    var els = scope.querySelectorAll('.js-plotly-plot');
+    els.forEach(function(el){
+      try { window.Plotly && Plotly.Plots && Plotly.Plots.resize(el); } catch(e){}
+    });
+  }
+
+  function onReady(){
+    try { console.info('[DEBUG] onReady, mode=subreport'); } catch(e) {}
+    observeIframes();
+    markPlotlyCards();
+    resizePlotlyCharts();
+    setTimeout(resizePlotlyCharts, 150);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', onReady); else onReady();
+
+  
+})();
+</script>
+
+</body>
+</html>

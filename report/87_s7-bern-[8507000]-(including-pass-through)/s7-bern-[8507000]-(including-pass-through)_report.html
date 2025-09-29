@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>S7 - Bern [8507000] (including pass-through) – Report</title>
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+
+  <style>
+  :root{
+    --fg:#1f2937; --muted:#6b7280; --card:#ffffff; --bg:#f8fafc; --accent:#0ea5e9;
+    --space-1:.5rem; --space-2:.8rem; --space-3:1.2rem; --radius:12px;
+  }
+  *{box-sizing:border-box}
+  body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg); color:var(--fg); margin:0; padding:2rem;}
+  .report{max-width:1500px;margin:0 auto;background:var(--card);border-radius:16px;padding:24px;box-shadow:0 10px 30px rgba(0,0,0,.06);}
+  h1{margin:.2rem 0 1rem;font-size:clamp(1.6rem,1.2rem + 1.2vw,2.1rem)}
+  h2{margin:1.6rem 0 .8rem;font-size:clamp(1.1rem,.9rem + .6vw,1.35rem)}
+  h3{margin:1.2rem 0 .6rem;font-size:clamp(1.0rem,.9rem + .3vw,1.1rem)}
+  .meta{color:var(--muted);font-size:.9rem;margin-bottom:1rem;font-variant-numeric:tabular-nums}
+  .small{font-size:.9rem;color:var(--muted);font-variant-numeric:tabular-nums}
+
+  /* Responsive grids */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:.8rem 0 1.2rem}
+  .row{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px; align-items:start}
+  .row-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:14px}
+  .row-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+
+  .card{background:#fff;border:1px solid #eef2f7;border-radius:var(--radius);padding:14px;min-height:100%; overflow:hidden;}
+  .card.allow-overflow{ overflow:visible }
+  .card > h3{margin:.2rem 0 .6rem}
+  .card[data-compact="true"]{padding:10px}
+
+  img{max-width:100%;height:auto;border-radius:8px;border:1px solid #eef2f7}
+
+  /* Tables */
+  .table{width:100%;border-collapse:collapse;font-size:.92rem}
+  .table th,.table td{padding:.5rem .6rem;border-bottom:1px solid #eef2f7;text-align:left}
+  .table th{position:sticky;top:0;background:var(--card);z-index:1}
+  .table td:nth-child(2), .table td:nth-child(3){text-align:right;font-variant-numeric:tabular-nums}
+
+  hr{border:none;border-top:1px solid #eef2f7;margin:1.2rem 0}
+  .link-card{display:flex;justify-content:space-between;align-items:center;padding:12px;border:1px solid #eef2f7;border-radius:10px;background:#fafcff}
+  .link-card a{color:var(--accent);text-decoration:none;font-weight:600}
+  .footer{color:var(--muted);font-size:.8rem;margin-top:1rem}
+  details{border:1px solid #eef2f7;border-radius:12px;background:#fff;margin:12px 0}
+  summary{cursor:pointer;list-style:none;padding:12px 14px;font-weight:600}
+  summary::-webkit-details-marker{display:none}
+  details > .content{padding:14px;border-top:1px solid #eef2f7}
+  .placeholder{user-select:none}
+  .badge{display:inline-block;background:#eef6ff;color:#0b6fb5;border:1px solid #cfe8ff;padding:.2rem .5rem;border-radius:999px;font-size:.8rem}
+
+  /* Key-value grid */
+  .kv{display:grid;grid-template-columns:1fr auto;gap:.25rem .8rem;align-items:baseline;margin:.2rem 0 1rem}
+  .kv .k{color:var(--muted)}
+  .kv .v{font-weight:600}
+
+  /* Plotly responsiveness and sizing helpers */
+  .plotly, .js-plotly-plot{width:100% !important; height:auto}
+  .chart-square{ aspect-ratio:1/1; min-height:420px; width:100% }
+  .chart-43{ aspect-ratio:4/3; min-height:320px; width:100% }
+  .chart-square .js-plotly-plot,
+  .chart-square .plotly,
+  .chart-43 .js-plotly-plot,
+  .chart-43 .plotly{ height:100% !important; width:100% !important; display:block }
+
+  /* Distance charts */
+  .chart-distance-main{ min-height:420px; width:100% }
+  .chart-distance-compact{ min-height:300px; width:100% }
+
+  /* Filter bar */
+  .filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;align-items:end;margin:.6rem 0 1rem}
+  .filters label{font-size:.85rem;color:var(--muted);display:block;margin-bottom:.25rem}
+  .filters input[type="checkbox"]{transform:translateY(1px)}
+  .filters .inline{display:flex;align-items:center;gap:.5rem}
+  .filters select,.filters button{width:100%;padding:.55rem .6rem;border:1px solid #e5e7eb;border-radius:10px;background:#fff;font-weight:600}
+  .filters button{background:var(--accent);color:#fff;cursor:pointer}
+  .filters .hint{font-size:.8rem;color:var(--muted)}
+
+  /* Dark mode */
+  @media (prefers-color-scheme: dark){
+    :root{ --fg:#e5e7eb; --muted:#94a3b8; --card:#0b1220; --bg:#0a0f1a; --accent:#38bdf8 }
+    body{background:var(--bg); color:var(--fg)}
+    .card, details{background:var(--card); border-color:#1f2937}
+    .table th,.table td{border-bottom:1px solid #1f2937}
+    img{border-color:#1f2937}
+    .link-card{background:#0f172a; border-color:#1f2937}
+  }
+
+  @media (prefers-reduced-motion: reduce){ *{scroll-behavior:auto} }
+
+  @media print{
+    body{background:#fff; padding:0; color:#000}
+    .report{box-shadow:none; border-radius:0; max-width:none; padding:0}
+    .filters{display:none}
+    details{border:none}
+    details[open] > .content{padding:0}
+    .card{break-inside:avoid}
+    a[href^="http"]:after{content:" (" attr(href) ")"; font-size:.85em}
+  }
+  /* ——— Nicer filter UI ——— */
+/* Filter card layout */
+.filter-card{
+  margin:0 0 12px;
+  background:var(--card);
+  border:1px solid #eef2f7;
+  border-radius:var(--radius);
+  padding:16px;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+.filter-card h3{margin:0 0 4px}
+
+/* Row containers */
+.filter-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.filter-row.middle{flex-wrap:wrap}
+.filter-row.middle .fctl{flex:1 1 220px}
+.filter-row.bottom{flex-direction:column;align-items:flex-start;gap:.35rem}
+
+/* Inputs */
+.fctl label{display:block;margin:0 0 .35rem;font-size:.9rem;color:var(--fg)}
+.fctl .muted{color:var(--muted);font-weight:400}
+.fctl .req{color:var(--accent);font-weight:600}
+.fctl select{width:100%;padding:.6rem .7rem;border:1px solid #e5e7eb;border-radius:10px;background:#fff;font-weight:600}
+.filter-row.bottom button{
+  width:100%;padding:.8rem 1rem;
+  border:none;border-radius:12px;
+  background:var(--accent);color:#fff;
+  font-weight:700;cursor:pointer;
+}
+.filter-row.bottom button[disabled]{opacity:.6;cursor:not-allowed}
+.small.error{color:#b91c1c}
+
+/* Segmented toggle */
+.seg-toggle{display:inline-grid;grid-auto-flow:column;border:1px solid #e5e7eb;border-radius:999px;overflow:hidden}
+.seg-toggle input{position:absolute;opacity:0;pointer-events:none}
+.seg-toggle label{padding:.45rem .9rem;font-weight:700;cursor:pointer;background:#f9fafb}
+.seg-toggle input:checked + label{background:var(--accent);color:#fff}
+
+/* Pass-through switch */
+.switch{display:inline-flex;align-items:center;gap:.6rem;cursor:pointer;user-select:none}
+.switch input{position:absolute;opacity:0;width:0;height:0}
+.switch .slider{position:relative;width:46px;height:28px;border-radius:999px;background:#e5e7eb;transition:.2s;display:inline-block}
+.switch .slider::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.15);transition:.2s}
+.switch input:checked + .slider{background:var(--accent)}
+.switch input:checked + .slider::after{transform:translateX(18px)}
+.switch .switch-label{font-weight:600;color:var(--fg);font-size:.9rem}
+
+/* Dark mode tweaks */
+@media (prefers-color-scheme: dark){
+  .filter-card{border-color:#1f2937}
+  .fctl select{background:var(--card);border-color:#1f2937;color:var(--fg)}
+  .seg-toggle{border-color:#1f2937}
+  .seg-toggle label{background:#0f172a}
+  .switch .slider{background:#334155}
+}
+
+
+
+  </style>
+</head>
+
+<body>
+<div class="report">
+
+  <div class="meta">Erstellt am 2025-09-25 16:44</div>
+  <h1>S7 - Bern [8507000] (including pass-through) – Report</h1>
+
+  
+  
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+      
+  <h2>Übersicht</h2>
+    <div class="row">
+    
+      <div class="card" >
+      <h3>Lage</h3>
+      
+      <iframe data-src="../87_s7-bern-[8507000]-(including-pass-through)/s7-bern-[8507000]-(including-pass-through)_location.html" src="about:blank" width="100%" height="400"
+              loading="lazy" referrerpolicy="no-referrer"
+              style="border:1px solid #eef2f7;border-radius:8px"></iframe>
+      <div class="small" style="margin-top:.4rem">
+        Falls der Iframe blockiert wird:
+        <a href="../87_s7-bern-[8507000]-(including-pass-through)/s7-bern-[8507000]-(including-pass-through)_location.html">im neuen Tab öffnen</a>.
+      </div>
+    
+    </div>
+
+    <div class="card" >
+      <h3>Schlüsseldaten</h3>
+      
+      <div>                            <div id="cf48a054-ddd9-418a-85c8-b91a8f7846b5" class="plotly-graph-div" style="height:380px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("cf48a054-ddd9-418a-85c8-b91a8f7846b5")) {                    Plotly.newPlot(                        "cf48a054-ddd9-418a-85c8-b91a8f7846b5",                        [{"arrangement":"snap","link":{"hovertemplate":"%{value:,} trips\u003cextra\u003e\u003c\u002fextra\u003e","source":[0,0,1,1,2,2],"target":[3,4,3,4,3,4],"value":[998,753,1778,3571,10017,14847]},"node":{"label":["Green","Yellow","Red","OV","MIV"],"pad":10,"thickness":12},"type":"sankey"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"margin":{"l":10,"r":10,"t":60,"b":10},"title":{"text":"Flows: All \u2192 Quality \u2192 Mode"},"height":380},                        {"responsive": true}                    )                };            </script>        </div>
+    
+    </div>
+    </div>
+    <div class="row">
+    
+    <div class="card" >
+      <h3>Schlüsseldaten</h3>
+      
+      <div>                            <div id="17f20b6a-c525-4675-82d7-699b4226be71" class="plotly-graph-div" style="height:360px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("17f20b6a-c525-4675-82d7-699b4226be71")) {                    Plotly.newPlot(                        "17f20b6a-c525-4675-82d7-699b4226be71",                        [{"hovertemplate":"%{y:,} OV trips\u003cextra\u003e\u003c\u002fextra\u003e","name":"OV","text":["52%","32%","36%"],"textposition":"inside","x":["Green","Yellow","Red"],"y":[998,1778,10017],"type":"bar"},{"hovertemplate":"%{y:,} MIV trips\u003cextra\u003e\u003c\u002fextra\u003e","name":"MIV","text":["39%","65%","54%"],"textposition":"inside","x":["Green","Yellow","Red"],"y":[753,3571,14847],"type":"bar"},{"hovertemplate":"%{y:,} LV trips\u003cextra\u003e\u003c\u002fextra\u003e","name":"LV","text":["8%","3%","10%"],"textposition":"inside","x":["Green","Yellow","Red"],"y":[158,144,2874],"type":"bar"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"margin":{"l":40,"r":20,"t":60,"b":40},"title":{"text":"OV vs MIV vs LV by OV Quality (share)"},"barmode":"stack","barnorm":"percent","yaxis":{"title":{"text":"Share (%)"}},"height":360},                        {"responsive": true}                    )                };            </script>        </div>
+    
+    </div>
+    <div class="card" >
+      <h3>Schlüsseldaten</h3>
+      
+      <div>                            <div id="5debefb6-35f5-493d-8aa2-ad301240da0d" class="plotly-graph-div" style="height:360px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("5debefb6-35f5-493d-8aa2-ad301240da0d")) {                    Plotly.newPlot(                        "5debefb6-35f5-493d-8aa2-ad301240da0d",                        [{"hole":0.55,"hovertemplate":"%{label}: %{value:,} trips\u003cextra\u003e\u003c\u002fextra\u003e","labels":["OV","MIV","LV"],"textinfo":"label+percent","values":[12797,19185,3175],"type":"pie"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"margin":{"l":20,"r":20,"t":60,"b":20},"title":{"text":"Overall Modal Split"},"height":360,"showlegend":false},                        {"responsive": true}                    )                };            </script>        </div>
+    
+    </div>
+
+    </div>
+  <h2>Jetzige Nutzung</h2>
+  <div class="row">
+      <div class="card" >
+      <h3>ÖV Nachfrage</h3>
+      
+      <iframe data-src="../87_s7-bern-[8507000]-(including-pass-through)/s7-bern-[8507000]-(including-pass-through)_total_demand.html" src="about:blank" width="100%" height="560"
+              loading="lazy" referrerpolicy="no-referrer"
+              style="border:1px solid #eef2f7;border-radius:8px"></iframe>
+      <div class="small" style="margin-top:.4rem">
+        Falls der Iframe blockiert wird:
+        <a href="../87_s7-bern-[8507000]-(including-pass-through)/s7-bern-[8507000]-(including-pass-through)_total_demand.html">im neuen Tab öffnen</a>.
+      </div>
+    
+    </div>
+    </div>
+<div class="row">
+  <div class="card" >
+      <h3>Top ÖV-Verkehr Gemeinde Paare</h3>
+      
+      <div>                            <div id="528e75d9-9dd1-4737-891a-670efde3bf9a" class="plotly-graph-div" style="height:180px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("528e75d9-9dd1-4737-891a-670efde3bf9a")) {                    Plotly.newPlot(                        "528e75d9-9dd1-4737-891a-670efde3bf9a",                        [{"branchvalues":"total","customdata":{"dtype":"f8","bdata":"TRVHW9sPtEDJgfxBQVmSQCcpxjMddY9ANV2UQ2grgkB8DDehq4CAQPg9+U6y239ACwrnj\u002f3HY0Bn\u002feIfMMdcQJidPaCFD1lAUPYQOGU5V0AUcm2CuhJUQJIy+TjvTFJA7oqgQiY0UkCJc68HVUJRQAP7a9IaCFFAw\u002fNqnHm3UEAVco5GTjZQQGUWtJonXU5AygXqPCT5TUCNIfCy4j1MQA==","shape":"20, 1"},"domain":{"x":[0.0,1.0],"y":[0.0,1.0]},"hovertemplate":"\u003cb\u003e%{label}\u003c\u002fb\u003e\u003cbr\u003eFahrten: %{value:,.0f}\u003cextra\u003e\u003c\u002fextra\u003e","ids":["Bern \u2013 Ittigen","Bern \u2013 Bolligen","Bern \u2013 Vechigen","Ittigen \u2013 K\u00f6niz","Bern \u2013 Stettlen","Bern \u2013 Worb","Ittigen \u2013 Thun","Bern \u2013 Krauchthal","Ittigen \u2013 Wohlen bei Bern","Ittigen \u2013 Ostermundigen","Bolligen \u2013 K\u00f6niz","Ittigen \u2013 Muri bei Bern","Bern \u2013 Ostermundigen","Bern \u2013 Rubigen","Bern \u2013 K\u00f6niz","K\u00f6niz \u2013 Vechigen","Ittigen \u2013 Z\u00fcrich","Biel\u002fBienne \u2013 Ittigen","Ittigen \u2013 Kirchlindach","Ittigen \u2013 M\u00fcnsingen"],"labels":["Bern \u2013 Ittigen","Bern \u2013 Bolligen","Bern \u2013 Vechigen","Ittigen \u2013 K\u00f6niz","Bern \u2013 Stettlen","Bern \u2013 Worb","Ittigen \u2013 Thun","Bern \u2013 Krauchthal","Ittigen \u2013 Wohlen bei Bern","Ittigen \u2013 Ostermundigen","Bolligen \u2013 K\u00f6niz","Ittigen \u2013 Muri bei Bern","Bern \u2013 Ostermundigen","Bern \u2013 Rubigen","Bern \u2013 K\u00f6niz","K\u00f6niz \u2013 Vechigen","Ittigen \u2013 Z\u00fcrich","Biel\u002fBienne \u2013 Ittigen","Ittigen \u2013 Kirchlindach","Ittigen \u2013 M\u00fcnsingen"],"marker":{"coloraxis":"coloraxis","colors":{"dtype":"f8","bdata":"TRVHW9sPtEDJgfxBQVmSQCcpxjMddY9ANV2UQ2grgkB8DDehq4CAQPg9+U6y239ACwrnj\u002f3HY0Bn\u002feIfMMdcQJidPaCFD1lAUPYQOGU5V0AUcm2CuhJUQJIy+TjvTFJA7oqgQiY0UkCJc68HVUJRQAP7a9IaCFFAw\u002fNqnHm3UEAVco5GTjZQQGUWtJonXU5AygXqPCT5TUCNIfCy4j1MQA=="}},"name":"","parents":["","","","","","","","","","","","","","","","","","","",""],"values":{"dtype":"f8","bdata":"TRVHW9sPtEDJgfxBQVmSQCcpxjMddY9ANV2UQ2grgkB8DDehq4CAQPg9+U6y239ACwrnj\u002f3HY0Bo\u002feIfMMdcQJidPaCFD1lAUPYQOGU5V0AUcm2CuhJUQJIy+TjvTFJA7oqgQiY0UkCJc68HVUJRQAP7a9IaCFFAw\u002fNqnHm3UEAVco5GTjZQQGQWtJonXU5AygXqPCT5TUCNIfCy4j1MQA=="},"type":"treemap","textinfo":"text","texttemplate":"%{label}\u003cbr\u003e%{value:,.0f}"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"coloraxis":{"colorbar":{"title":{"text":"value"},"tickformat":",.0f"},"colorscale":[[0.0,"#440154"],[0.1111111111111111,"#482878"],[0.2222222222222222,"#3e4989"],[0.3333333333333333,"#31688e"],[0.4444444444444444,"#26828e"],[0.5555555555555556,"#1f9e89"],[0.6666666666666666,"#35b779"],[0.7777777777777778,"#6ece58"],[0.8888888888888888,"#b5de2b"],[1.0,"#fde725"]],"cmin":0.0,"cmax":12797.106874140247},"legend":{"tracegroupgap":0},"margin":{"t":6,"l":0,"r":0,"b":0},"separators":",.","height":180,"title":{}},                        {"responsive": true}                    )                };            </script>        </div>
+      <details style="margin-top:10px">
+        <summary>Tabelle anzeigen</summary>
+        <div class="content"><table class="dataframe table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Herkunft</th>
+      <th>Ziel</th>
+      <th>Fahrten</th>
+      <th>Anteil (%)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Bern</td>
+      <td>Ittigen</td>
+      <td>5136</td>
+      <td>42.7</td>
+    </tr>
+    <tr>
+      <td>Bern</td>
+      <td>Bolligen</td>
+      <td>1174</td>
+      <td>9.8</td>
+    </tr>
+    <tr>
+      <td>Bern</td>
+      <td>Vechigen</td>
+      <td>1007</td>
+      <td>8.4</td>
+    </tr>
+    <tr>
+      <td>Ittigen</td>
+      <td>Köniz</td>
+      <td>581</td>
+      <td>4.8</td>
+    </tr>
+    <tr>
+      <td>Bern</td>
+      <td>Stettlen</td>
+      <td>528</td>
+      <td>4.4</td>
+    </tr>
+    <tr>
+      <td>Bern</td>
+      <td>Worb</td>
+      <td>510</td>
+      <td>4.2</td>
+    </tr>
+    <tr>
+      <td>Ittigen</td>
+      <td>Thun</td>
+      <td>158</td>
+      <td>1.3</td>
+    </tr>
+    <tr>
+      <td>Bern</td>
+      <td>Krauchthal</td>
+      <td>115</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <td>Ittigen</td>
+      <td>Wohlen bei Bern</td>
+      <td>100</td>
+      <td>0.8</td>
+    </tr>
+    <tr>
+      <td>Ittigen</td>
+      <td>Ostermundigen</td>
+      <td>93</td>
+      <td>0.8</td>
+    </tr>
+    <tr>
+      <td>Bolligen</td>
+      <td>Köniz</td>
+      <td>80</td>
+      <td>0.7</td>
+    </tr>
+    <tr>
+      <td>Ittigen</td>
+      <td>Muri bei Bern</td>
+      <td>73</td>
+      <td>0.6</td>
+    </tr>
+    <tr>
+      <td>Bern</td>
+      <td>Ostermundigen</td>
+      <td>73</td>
+      <td>0.6</td>
+    </tr>
+    <tr>
+      <td>Bern</td>
+      <td>Rubigen</td>
+      <td>69</td>
+      <td>0.6</td>
+    </tr>
+    <tr>
+      <td>Bern</td>
+      <td>Köniz</td>
+      <td>68</td>
+      <td>0.6</td>
+    </tr>
+    <tr>
+      <td>Köniz</td>
+      <td>Vechigen</td>
+      <td>67</td>
+      <td>0.6</td>
+    </tr>
+    <tr>
+      <td>Ittigen</td>
+      <td>Zürich</td>
+      <td>65</td>
+      <td>0.5</td>
+    </tr>
+    <tr>
+      <td>Biel/Bienne</td>
+      <td>Ittigen</td>
+      <td>61</td>
+      <td>0.5</td>
+    </tr>
+    <tr>
+      <td>Ittigen</td>
+      <td>Kirchlindach</td>
+      <td>60</td>
+      <td>0.5</td>
+    </tr>
+    <tr>
+      <td>Ittigen</td>
+      <td>Münsingen</td>
+      <td>56</td>
+      <td>0.5</td>
+    </tr>
+  </tbody>
+</table></div>
+      </details>
+    
+    </div>
+  <div class="card" >
+      <h3>Top ÖV-Verkehr Gemeinden</h3>
+      
+      <div>                            <div id="7abd1790-5c20-42b0-b43b-ee50f7832abb" class="plotly-graph-div" style="height:180px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("7abd1790-5c20-42b0-b43b-ee50f7832abb")) {                    Plotly.newPlot(                        "7abd1790-5c20-42b0-b43b-ee50f7832abb",                        [{"branchvalues":"total","customdata":{"dtype":"f8","bdata":"K78WPTR1wUBHaHVTyLa8QMPopG0GLZZA1gY1kDzTk0C0mUnR6umLQCRzG3BfqIVA6uLLGExPhEAnqdksvfdtQCG4t17zaGxAlZWWrc2NYEBXXmp3GH1gQNoTXu8GAWBApZF+oWlDXkDe02uWvJBdQPoKoSfPQlpAZVHDa9d+WEAgGFJPcatUQATp5p0r+1NAn8NgcmHeU0DAomgZKqhTQA==","shape":"20, 1"},"domain":{"x":[0.0,1.0],"y":[0.0,1.0]},"hovertemplate":"\u003cb\u003e%{label}\u003c\u002fb\u003e\u003cbr\u003eFahrten: %{value:,.0f}\u003cextra\u003e\u003c\u002fextra\u003e","ids":["Bern","Ittigen","Bolligen","Vechigen","K\u00f6niz","Worb","Stettlen","Thun","Ostermundigen","Krauchthal","Belp","Wohlen bei Bern","Burgdorf","Muri bei Bern","M\u00fcnsingen","Rubigen","Kirchlindach","Bremgarten bei Bern","Biel\u002fBienne","Z\u00fcrich"],"labels":["Bern","Ittigen","Bolligen","Vechigen","K\u00f6niz","Worb","Stettlen","Thun","Ostermundigen","Krauchthal","Belp","Wohlen bei Bern","Burgdorf","Muri bei Bern","M\u00fcnsingen","Rubigen","Kirchlindach","Bremgarten bei Bern","Biel\u002fBienne","Z\u00fcrich"],"marker":{"coloraxis":"coloraxis","colors":{"dtype":"f8","bdata":"K78WPTR1wUBHaHVTyLa8QMPopG0GLZZA1gY1kDzTk0C0mUnR6umLQCRzG3BfqIVA6uLLGExPhEAnqdksvfdtQCG4t17zaGxAlZWWrc2NYEBXXmp3GH1gQNoTXu8GAWBApZF+oWlDXkDe02uWvJBdQPoKoSfPQlpAZVHDa9d+WEAgGFJPcatUQATp5p0r+1NAn8NgcmHeU0DAomgZKqhTQA=="}},"name":"","parents":["","","","","","","","","","","","","","","","","","","",""],"values":{"dtype":"f8","bdata":"K78WPTR1wUBIaHVTyLa8QMPopG0GLZZA1gY1kDzTk0CzmUnR6umLQCRzG3BfqIVA6uLLGExPhEAnqdksvfdtQCG4t17zaGxAlZWWrc2NYEBXXmp3GH1gQNoTXu8GAWBApZF+oWlDXkDe02uWvJBdQPoKoSfPQlpAZVHDa9d+WEAgGFJPcatUQATp5p0r+1NAn8NgcmHeU0DAomgZKqhTQA=="},"type":"treemap","textinfo":"text","texttemplate":"%{label}\u003cbr\u003e%{value:,.0f}"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"coloraxis":{"colorbar":{"title":{"text":"value"},"tickformat":",.0f"},"colorscale":[[0.0,"#440154"],[0.1111111111111111,"#482878"],[0.2222222222222222,"#3e4989"],[0.3333333333333333,"#31688e"],[0.4444444444444444,"#26828e"],[0.5555555555555556,"#1f9e89"],[0.6666666666666666,"#35b779"],[0.7777777777777778,"#6ece58"],[0.8888888888888888,"#b5de2b"],[1.0,"#fde725"]],"cmin":0.0,"cmax":12797.106874140247},"legend":{"tracegroupgap":0},"margin":{"t":6,"l":0,"r":0,"b":0},"separators":",.","height":180,"title":{}},                        {"responsive": true}                    )                };            </script>        </div>
+      <details style="margin-top:10px">
+        <summary>Tabelle anzeigen</summary>
+        <div class="content"><table class="dataframe table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Gemeinde</th>
+      <th>Fahrten</th>
+      <th>Anteil (%)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Bern</td>
+      <td>8938</td>
+      <td>37.2</td>
+    </tr>
+    <tr>
+      <td>Ittigen</td>
+      <td>7351</td>
+      <td>30.6</td>
+    </tr>
+    <tr>
+      <td>Bolligen</td>
+      <td>1419</td>
+      <td>5.9</td>
+    </tr>
+    <tr>
+      <td>Vechigen</td>
+      <td>1269</td>
+      <td>5.3</td>
+    </tr>
+    <tr>
+      <td>Köniz</td>
+      <td>893</td>
+      <td>3.7</td>
+    </tr>
+    <tr>
+      <td>Worb</td>
+      <td>693</td>
+      <td>2.9</td>
+    </tr>
+    <tr>
+      <td>Stettlen</td>
+      <td>650</td>
+      <td>2.7</td>
+    </tr>
+    <tr>
+      <td>Thun</td>
+      <td>240</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <td>Ostermundigen</td>
+      <td>227</td>
+      <td>0.9</td>
+    </tr>
+    <tr>
+      <td>Krauchthal</td>
+      <td>132</td>
+      <td>0.6</td>
+    </tr>
+    <tr>
+      <td>Belp</td>
+      <td>132</td>
+      <td>0.5</td>
+    </tr>
+    <tr>
+      <td>Wohlen bei Bern</td>
+      <td>128</td>
+      <td>0.5</td>
+    </tr>
+    <tr>
+      <td>Burgdorf</td>
+      <td>121</td>
+      <td>0.5</td>
+    </tr>
+    <tr>
+      <td>Muri bei Bern</td>
+      <td>118</td>
+      <td>0.5</td>
+    </tr>
+    <tr>
+      <td>Münsingen</td>
+      <td>105</td>
+      <td>0.4</td>
+    </tr>
+    <tr>
+      <td>Rubigen</td>
+      <td>98</td>
+      <td>0.4</td>
+    </tr>
+    <tr>
+      <td>Kirchlindach</td>
+      <td>83</td>
+      <td>0.3</td>
+    </tr>
+    <tr>
+      <td>Bremgarten bei Bern</td>
+      <td>80</td>
+      <td>0.3</td>
+    </tr>
+    <tr>
+      <td>Biel/Bienne</td>
+      <td>79</td>
+      <td>0.3</td>
+    </tr>
+    <tr>
+      <td>Zürich</td>
+      <td>79</td>
+      <td>0.3</td>
+    </tr>
+  </tbody>
+</table></div>
+      </details>
+    
+    </div>
+</div>
+
+<div class="row">
+  <div class="card" >
+      <h3>Top Linien</h3>
+      
+      <div>                            <div id="4ec74c12-51be-4a15-bf53-161ad3fbb282" class="plotly-graph-div" style="height:180px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("4ec74c12-51be-4a15-bf53-161ad3fbb282")) {                    Plotly.newPlot(                        "4ec74c12-51be-4a15-bf53-161ad3fbb282",                        [{"branchvalues":"total","customdata":{"dtype":"f8","bdata":"k0QNro3+yECplM1fS2uMQMi9BouuLIlAN+yMTaePeUBvm+GF31d4QJZs1yra3HVADubqvNw6dECUr0OXG1ZzQFk3tNEYrHBAagosfyofcEC+Hh4W2mNtQKzAX+ava2xA9BZUKR2CakB0ov3jIWZqQHs3Lop4lGZAhnEDynBBY0BDQv6hxd5hQI6ZFf45u2FAD+XxW3a5YUDSxJSc3F9hQA==","shape":"20, 1"},"domain":{"x":[0.0,1.0],"y":[0.0,1.0]},"hovertemplate":"\u003cb\u003e%{label}\u003c\u002fb\u003e\u003cbr\u003eFahrten: %{value:,.0f}\u003cextra\u003e\u003c\u002fextra\u003e","ids":["S7 (Regionalverkehr Bern-Solothurn)","8 (St\u00e4dtische Verkehrsbetriebe Bern)","10 (St\u00e4dtische Verkehrsbetriebe Bern)","12 (St\u00e4dtische Verkehrsbetriebe Bern)","7 (St\u00e4dtische Verkehrsbetriebe Bern)","9 (St\u00e4dtische Verkehrsbetriebe Bern)","S2 (BLS AG (bls))","20 (St\u00e4dtische Verkehrsbetriebe Bern)","6 (St\u00e4dtische Verkehrsbetriebe Bern)","46 (Autobusbetrieb RBS)","451 (PostAuto AG)","2350 (Drahtseilbahn Marzili-Stadt Bern AG)","40 (Autobusbetrieb RBS)","RE1 (BLS AG (bls))","41 (Autobusbetrieb RBS)","781 (PostAuto AG)","IR65 (BLS AG (bls))","S3 (BLS AG (bls))","47 (Autobusbetrieb RBS)","19 (St\u00e4dtische Verkehrsbetriebe Bern)"],"labels":["S7 (Regionalverkehr Bern-Solothurn)","8 (St\u00e4dtische Verkehrsbetriebe Bern)","10 (St\u00e4dtische Verkehrsbetriebe Bern)","12 (St\u00e4dtische Verkehrsbetriebe Bern)","7 (St\u00e4dtische Verkehrsbetriebe Bern)","9 (St\u00e4dtische Verkehrsbetriebe Bern)","S2 (BLS AG (bls))","20 (St\u00e4dtische Verkehrsbetriebe Bern)","6 (St\u00e4dtische Verkehrsbetriebe Bern)","46 (Autobusbetrieb RBS)","451 (PostAuto AG)","2350 (Drahtseilbahn Marzili-Stadt Bern AG)","40 (Autobusbetrieb RBS)","RE1 (BLS AG (bls))","41 (Autobusbetrieb RBS)","781 (PostAuto AG)","IR65 (BLS AG (bls))","S3 (BLS AG (bls))","47 (Autobusbetrieb RBS)","19 (St\u00e4dtische Verkehrsbetriebe Bern)"],"marker":{"coloraxis":"coloraxis","colors":{"dtype":"f8","bdata":"k0QNro3+yECplM1fS2uMQMi9BouuLIlAN+yMTaePeUBvm+GF31d4QJZs1yra3HVADubqvNw6dECUr0OXG1ZzQFk3tNEYrHBAagosfyofcEC+Hh4W2mNtQKzAX+ava2xA9BZUKR2CakB0ov3jIWZqQHs3Lop4lGZAhnEDynBBY0BDQv6hxd5hQI6ZFf45u2FAD+XxW3a5YUDSxJSc3F9hQA=="}},"name":"","parents":["","","","","","","","","","","","","","","","","","","",""],"values":{"dtype":"f8","bdata":"k0QNro3+yECplM1fS2uMQMi9BouuLIlAN+yMTaePeUBvm+GF31d4QJZs1yra3HVADubqvNw6dECUr0OXG1ZzQFk3tNEYrHBAagosfyofcEC+Hh4W2mNtQKvAX+ava2xA9RZUKR2CakB0ov3jIWZqQHs3Lop4lGZAhnEDynBBY0BDQv6hxd5hQI6ZFf45u2FAD+XxW3a5YUDSxJSc3F9hQA=="},"type":"treemap","textinfo":"text","texttemplate":"%{label}\u003cbr\u003e%{value:,.0f}"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"coloraxis":{"colorbar":{"title":{"text":"value"},"tickformat":",.0f"},"colorscale":[[0.0,"#440154"],[0.1111111111111111,"#482878"],[0.2222222222222222,"#3e4989"],[0.3333333333333333,"#31688e"],[0.4444444444444444,"#26828e"],[0.5555555555555556,"#1f9e89"],[0.6666666666666666,"#35b779"],[0.7777777777777778,"#6ece58"],[0.8888888888888888,"#b5de2b"],[1.0,"#fde725"]],"cmin":0.0,"cmax":12797.106874140247},"legend":{"tracegroupgap":0},"margin":{"t":6,"l":0,"r":0,"b":0},"separators":",.","height":180,"title":{}},                        {"responsive": true}                    )                };            </script>        </div>
+      <details style="margin-top:10px">
+        <summary>Tabelle anzeigen</summary>
+        <div class="content"><table class="dataframe table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Namen</th>
+      <th>Fahrten</th>
+      <th>Anteil (%)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>S7 (Regionalverkehr Bern-Solothurn)</td>
+      <td>12797</td>
+      <td>100.0</td>
+    </tr>
+    <tr>
+      <td>8 (Städtische Verkehrsbetriebe Bern)</td>
+      <td>909</td>
+      <td>7.1</td>
+    </tr>
+    <tr>
+      <td>10 (Städtische Verkehrsbetriebe Bern)</td>
+      <td>806</td>
+      <td>6.3</td>
+    </tr>
+    <tr>
+      <td>12 (Städtische Verkehrsbetriebe Bern)</td>
+      <td>409</td>
+      <td>3.2</td>
+    </tr>
+    <tr>
+      <td>7 (Städtische Verkehrsbetriebe Bern)</td>
+      <td>389</td>
+      <td>3.0</td>
+    </tr>
+    <tr>
+      <td>9 (Städtische Verkehrsbetriebe Bern)</td>
+      <td>350</td>
+      <td>2.7</td>
+    </tr>
+    <tr>
+      <td>S2 (BLS AG (bls))</td>
+      <td>324</td>
+      <td>2.5</td>
+    </tr>
+    <tr>
+      <td>20 (Städtische Verkehrsbetriebe Bern)</td>
+      <td>309</td>
+      <td>2.4</td>
+    </tr>
+    <tr>
+      <td>6 (Städtische Verkehrsbetriebe Bern)</td>
+      <td>267</td>
+      <td>2.1</td>
+    </tr>
+    <tr>
+      <td>46 (Autobusbetrieb RBS)</td>
+      <td>258</td>
+      <td>2.0</td>
+    </tr>
+    <tr>
+      <td>451 (PostAuto AG)</td>
+      <td>235</td>
+      <td>1.8</td>
+    </tr>
+    <tr>
+      <td>2350 (Drahtseilbahn Marzili-Stadt Bern AG)</td>
+      <td>227</td>
+      <td>1.8</td>
+    </tr>
+    <tr>
+      <td>40 (Autobusbetrieb RBS)</td>
+      <td>212</td>
+      <td>1.7</td>
+    </tr>
+    <tr>
+      <td>RE1 (BLS AG (bls))</td>
+      <td>211</td>
+      <td>1.7</td>
+    </tr>
+    <tr>
+      <td>41 (Autobusbetrieb RBS)</td>
+      <td>181</td>
+      <td>1.4</td>
+    </tr>
+    <tr>
+      <td>781 (PostAuto AG)</td>
+      <td>154</td>
+      <td>1.2</td>
+    </tr>
+    <tr>
+      <td>IR65 (BLS AG (bls))</td>
+      <td>143</td>
+      <td>1.1</td>
+    </tr>
+    <tr>
+      <td>S3 (BLS AG (bls))</td>
+      <td>142</td>
+      <td>1.1</td>
+    </tr>
+    <tr>
+      <td>47 (Autobusbetrieb RBS)</td>
+      <td>142</td>
+      <td>1.1</td>
+    </tr>
+    <tr>
+      <td>19 (Städtische Verkehrsbetriebe Bern)</td>
+      <td>139</td>
+      <td>1.1</td>
+    </tr>
+  </tbody>
+</table></div>
+      </details>
+    
+    </div>
+  <div class="card" >
+      <h3>Top Haltestellen</h3>
+      
+      <div>                            <div id="9fbe20cd-001b-48a5-a401-46c223ac0072" class="plotly-graph-div" style="height:180px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("9fbe20cd-001b-48a5-a401-46c223ac0072")) {                    Plotly.newPlot(                        "9fbe20cd-001b-48a5-a401-46c223ac0072",                        [{"branchvalues":"total","customdata":{"dtype":"f8","bdata":"yDPtDvGbxEAaeBXzzrKwQDgSyPMb56VAHe5aWYSelEA0OrzQ\u002fXKSQLQSGu19EpJASFnDorcti0BvnS9FdQB6QLDoLQ\u002fF9nhAAj9vZjXneEA+YuEFzv91QBe7ghXnOXRApNLm55Ugc0BYmft5KvVyQNTpgvBWk3JATMracfRtcUDBy4k3f8JsQDsEsJWWrWxA6cdmNZaQbED2PSp2d4NsQA==","shape":"20, 1"},"domain":{"x":[0.0,1.0],"y":[0.0,1.0]},"hovertemplate":"\u003cb\u003e%{label}\u003c\u002fb\u003e\u003cbr\u003eFahrten: %{value:,.0f}\u003cextra\u003e\u003c\u002fextra\u003e","ids":["Bern","Papierm\u00fchle","Worblaufen","Bolligen","Ittigen bei Bern","Bern, Hirschengraben","Boll-Utzigen","Bern, B\u00e4renplatz","Worb Dorf","Deisswil","Bern, Bollwerk","Vechigen","Stettlen","Ittigen, Aespliz","Bolligen, Halen","Worbboden","Bolligen, Bahnhof","Bern, Inselplatz","Thun","Bern, Zytglogge"],"labels":["Bern","Papierm\u00fchle","Worblaufen","Bolligen","Ittigen bei Bern","Bern, Hirschengraben","Boll-Utzigen","Bern, B\u00e4renplatz","Worb Dorf","Deisswil","Bern, Bollwerk","Vechigen","Stettlen","Ittigen, Aespliz","Bolligen, Halen","Worbboden","Bolligen, Bahnhof","Bern, Inselplatz","Thun","Bern, Zytglogge"],"marker":{"coloraxis":"coloraxis","colors":{"dtype":"f8","bdata":"yDPtDvGbxEAaeBXzzrKwQDgSyPMb56VAHe5aWYSelEA0OrzQ\u002fXKSQLQSGu19EpJASFnDorcti0BvnS9FdQB6QLDoLQ\u002fF9nhAAj9vZjXneEA+YuEFzv91QBe7ghXnOXRApNLm55Ugc0BYmft5KvVyQNTpgvBWk3JATMracfRtcUDBy4k3f8JsQDsEsJWWrWxA6cdmNZaQbED2PSp2d4NsQA=="}},"name":"","parents":["","","","","","","","","","","","","","","","","","","",""],"values":{"dtype":"f8","bdata":"yDPtDvGbxEAaeBXzzrKwQDgSyPMb56VAHe5aWYSelEA0OrzQ\u002fXKSQLQSGu19EpJASFnDorcti0BvnS9FdQB6QLDoLQ\u002fF9nhAAj9vZjXneEA+YuEFzv91QBe7ghXnOXRApNLm55Ugc0BYmft5KvVyQNTpgvBWk3JATMracfRtcUDBy4k3f8JsQDsEsJWWrWxA6cdmNZaQbED1PSp2d4NsQA=="},"type":"treemap","textinfo":"text","texttemplate":"%{label}\u003cbr\u003e%{value:,.0f}"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"coloraxis":{"colorbar":{"title":{"text":"value"},"tickformat":",.0f"},"colorscale":[[0.0,"#440154"],[0.1111111111111111,"#482878"],[0.2222222222222222,"#3e4989"],[0.3333333333333333,"#31688e"],[0.4444444444444444,"#26828e"],[0.5555555555555556,"#1f9e89"],[0.6666666666666666,"#35b779"],[0.7777777777777778,"#6ece58"],[0.8888888888888888,"#b5de2b"],[1.0,"#fde725"]],"cmin":0.0,"cmax":12797.106874140247},"legend":{"tracegroupgap":0},"margin":{"t":6,"l":0,"r":0,"b":0},"separators":",.","height":180,"title":{}},                        {"responsive": true}                    )                };            </script>        </div>
+      <details style="margin-top:10px">
+        <summary>Tabelle anzeigen</summary>
+        <div class="content"><table class="dataframe table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Namen</th>
+      <th>Fahrten</th>
+      <th>Anteil (%)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Bern</td>
+      <td>10552</td>
+      <td>82.5</td>
+    </tr>
+    <tr>
+      <td>Papiermühle</td>
+      <td>4275</td>
+      <td>33.4</td>
+    </tr>
+    <tr>
+      <td>Worblaufen</td>
+      <td>2804</td>
+      <td>21.9</td>
+    </tr>
+    <tr>
+      <td>Bolligen</td>
+      <td>1320</td>
+      <td>10.3</td>
+    </tr>
+    <tr>
+      <td>Ittigen bei Bern</td>
+      <td>1181</td>
+      <td>9.2</td>
+    </tr>
+    <tr>
+      <td>Bern, Hirschengraben</td>
+      <td>1157</td>
+      <td>9.0</td>
+    </tr>
+    <tr>
+      <td>Boll-Utzigen</td>
+      <td>870</td>
+      <td>6.8</td>
+    </tr>
+    <tr>
+      <td>Bern, Bärenplatz</td>
+      <td>416</td>
+      <td>3.3</td>
+    </tr>
+    <tr>
+      <td>Worb Dorf</td>
+      <td>399</td>
+      <td>3.1</td>
+    </tr>
+    <tr>
+      <td>Deisswil</td>
+      <td>398</td>
+      <td>3.1</td>
+    </tr>
+    <tr>
+      <td>Bern, Bollwerk</td>
+      <td>352</td>
+      <td>2.8</td>
+    </tr>
+    <tr>
+      <td>Vechigen</td>
+      <td>324</td>
+      <td>2.5</td>
+    </tr>
+    <tr>
+      <td>Stettlen</td>
+      <td>306</td>
+      <td>2.4</td>
+    </tr>
+    <tr>
+      <td>Ittigen, Aespliz</td>
+      <td>303</td>
+      <td>2.4</td>
+    </tr>
+    <tr>
+      <td>Bolligen, Halen</td>
+      <td>297</td>
+      <td>2.3</td>
+    </tr>
+    <tr>
+      <td>Worbboden</td>
+      <td>279</td>
+      <td>2.2</td>
+    </tr>
+    <tr>
+      <td>Bolligen, Bahnhof</td>
+      <td>230</td>
+      <td>1.8</td>
+    </tr>
+    <tr>
+      <td>Bern, Inselplatz</td>
+      <td>229</td>
+      <td>1.8</td>
+    </tr>
+    <tr>
+      <td>Thun</td>
+      <td>229</td>
+      <td>1.8</td>
+    </tr>
+    <tr>
+      <td>Bern, Zytglogge</td>
+      <td>228</td>
+      <td>1.8</td>
+    </tr>
+  </tbody>
+</table></div>
+      </details>
+    
+    </div>
+</div>
+
+  <h2>ÖV Qualität</h2>
+  <div class="row">
+      <div class="card" >
+      <h3>Verhältnis ÖV Fahrzeit vs MIV Fahrzeit</h3>
+      
+      <iframe data-src="../87_s7-bern-[8507000]-(including-pass-through)/s7-bern-[8507000]-(including-pass-through)_ratio.html" src="about:blank" width="100%" height="560"
+              loading="lazy" referrerpolicy="no-referrer"
+              style="border:1px solid #eef2f7;border-radius:8px"></iframe>
+      <div class="small" style="margin-top:.4rem">
+        Falls der Iframe blockiert wird:
+        <a href="../87_s7-bern-[8507000]-(including-pass-through)/s7-bern-[8507000]-(including-pass-through)_ratio.html">im neuen Tab öffnen</a>.
+      </div>
+    
+    </div>
+    </div>
+  <h2>ÖV Potenzial</h2>
+  <div class="card" >
+      <h3>???</h3>
+      <div class="placeholder" style="height:420px;display:flex;align-items:center;justify-content:center;
+    background:repeating-linear-gradient(45deg,#f3f6fb,#f3f6fb 10px,#eef2f7 10px,#eef2f7 20px);
+    border:1px dashed #cfd8e3;border-radius:12px;font-weight:600;color:#64748b">
+      Inhalt (Placeholder)
+    </div>
+    </div>
+
+    <h2>Daten</h2>
+    <div class="card">
+      <div class="small">
+        <p>Die Analyse beruht auf den folgenden Datensätzen. Soweit nicht anders angegeben, beziehen sich alle Analysen im Dashboard auf die hier pro Datensatz aufgeführten Zeiträume.</p>
+        <p><strong>42hacks Routing Algorithmus</strong> berechnet wahrscheinliche MIV- und ÖV-Reiserouten basierend auf Quell-Ziel-Nachfragematrizen. <strong>Version:</strong> 2025</p>
+        <p><strong>Swisscom Quell-Ziel-Daten</strong> … <strong>Datensatz:</strong> Gemittelter Werktag, 2023</p>
+        <p><strong>Google Environmental Insights Explorer (EIE) – Transport</strong> … <strong>Version:</strong> 2023</p>
+      </div>
+    </div>
+
+    <hr>
+    <div class="footer">
+      <span class="small">Hinweis: Karten sind als separate HTML-Dateien eingebettet.</span>
+    </div>
+  
+
+</div>
+<script>
+(function(){
+  // Lazy-load iframes when visible (works for maps inside subreports too)
+  function loadIframe(iframe){
+    if (!iframe || iframe.__loaded) return;
+    var real = iframe.getAttribute('data-src');
+    if (!real) return;
+    iframe.src = real;
+    iframe.__loaded = true;
+  }
+  var io = 'IntersectionObserver' in window ? new IntersectionObserver(function(entries){
+    entries.forEach(function(e){ if(e.isIntersecting) loadIframe(e.target); });
+  }, {rootMargin: '200px'}) : null;
+
+  function observeIframes(root){
+    var scope = root || document;
+    var iframes = scope.querySelectorAll('iframe[data-src]');
+    iframes.forEach(function(iframe){
+      if (io) io.observe(iframe); else loadIframe(iframe);
+      var details = iframe.closest('details');
+      if (details) {
+        details.addEventListener('toggle', function(){
+          if (details.open) {
+            loadIframe(iframe);
+            try {
+              iframe.contentWindow && iframe.contentWindow.dispatchEvent(new Event('resize'));
+              setTimeout(function(){ iframe.contentWindow && iframe.contentWindow.dispatchEvent(new Event('resize')); }, 150);
+            } catch(e) {}
+          }
+        });
+      }
+    });
+  }
+
+  // Plotly helpers
+  function markPlotlyCards(root){
+    var scope = root || document;
+    var charts = scope.querySelectorAll('.js-plotly-plot');
+    charts.forEach(function(el){
+      var card = el.closest('.card');
+      if (card) card.classList.add('allow-overflow');
+    });
+  }
+  function resizePlotlyCharts(root){
+    var scope = root || document;
+    var els = scope.querySelectorAll('.js-plotly-plot');
+    els.forEach(function(el){
+      try { window.Plotly && Plotly.Plots && Plotly.Plots.resize(el); } catch(e){}
+    });
+  }
+
+  function onReady(){
+    try { console.info('[DEBUG] onReady, mode=subreport'); } catch(e) {}
+    observeIframes();
+    markPlotlyCards();
+    resizePlotlyCharts();
+    setTimeout(resizePlotlyCharts, 150);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', onReady); else onReady();
+
+  
+})();
+</script>
+
+</body>
+</html>
